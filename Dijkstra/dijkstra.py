@@ -1,5 +1,10 @@
 import math
 import copy
+import logging
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(levelname)s %(asctime)s.%(msecs)03d %(filename)s:%(lineno)d %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
 
 
 class Node:
@@ -103,7 +108,7 @@ class TestDijstra:
                             self.close_list[ii[0]] = copy.deepcopy(temp_node)
 
         for key, value in self.open_list.items():
-            print("open_list: ", key, " : ", value)
+            logging.info(value)
 
     def GetPath(self):
         path = []
@@ -114,7 +119,7 @@ class TestDijstra:
                 break
             index = self.open_list[index].father_index
         path.reverse()
-        print(path)
+        logging.info("The path index is: %s", path)
 
 
 if __name__ == '__main__':
