@@ -23,6 +23,7 @@ class Node:
 
 class PlotMap:
     def __init__(self, min_x, min_y, max_x, max_y, start_point, end_point):
+
         self.minX = min_x
         self.maxX = max_x
         self.minY = min_y
@@ -30,10 +31,8 @@ class PlotMap:
 
         self.start = start_point
         self.end = end_point
-
-        self.OpenList = dict()
-        self.CloseList = []
-
+        self.Index = dict()
+        self.CloseList = dict()
         self.Open = []
 
         self.motion = [[1, 0, 1],
@@ -72,59 +71,77 @@ class PlotMap:
         for ii in np.arange(min_x, max_x + 1, 1):
             for jj in np.arange(min_y, max_y + 1, 1):
                 self.map_point[index] = copy.deepcopy(init_node)
+                self.Index[index] = [ii, jj]
                 index = index + 1
 
-    def Init(self):
+    def CalculateIndex(self, x, y):
+        return (self.maxX - self.minX + 1) * (x - self.minX) + (y - self.minY)
+
+    def Dijkstra(self):
+        plt.figure(figsize=(8, 8))
+        self.BuildingBoundaryMap()
         index = self.CalculateIndex(self.start[0], self.start[1])
         init_node = Node()
         init_node.father_index = [-1, -1]
         init_node.cost = 0
         self.map_point[index] = copy.deepcopy(init_node)
+        self.CloseList[index] = copy.deepcopy(init_node)
+        current_x = self.start[0]
+        current_y = self.start[1]
+        self.map_point.pop(index)
+        for motion_x, motion_y, cost in self.motion:
+            target_x = current_x + motion_x
+            target_y = current_y + motion_y
 
-    def CalculateIndex(self, x, y):
-        return (self.maxX - self.minX + 1) * (x - self.minX) + (y - self.minY)
-
-    def Dijkstra(self, xy):
-        for PointPosition in xy:
-            current_x = PointPosition[0]
-            current_y = PointPosition[1]
-            init_node = Node()
+            if target_x == self.end[0] and target_y == self.end[1]:
+                break
+            point_index_before = self.CalculateIndex(current_x, current_y)
+            init_node.cost = cost + self.CloseList[point_index_before].cost
+            init_node.father_index = [current_x, current_y]
+            point_index_current = self.CalculateIndex(target_x, target_y)
+            if self.map_point[point_index_current].cost > init_node.cost:
+                self.map_point[point_index_current] = copy.deepcopy(init_node)
+        while 1:
+            min_key = min(self.map_point, key=lambda k: self.map_point[k].cost)
+            current_x = self.Index[min_key][0]
+            current_y = self.Index[min_key][1]
+            self.Open.append([current_x, current_y])
+            self.CloseList[min_key] = self.map_point[min_key]
+            self.map_point.pop(min_key)
+            if current_x == self.end[0] and current_y == self.end[1]:
+                break
             for motion_x, motion_y, cost in self.motion:
                 target_x = current_x + motion_x
                 target_y = current_y + motion_y
-                if target_x == self.end[0] and target_y == self.end[1]:
-                    point_index_before = self.CalculateIndex(current_x, current_y)
-                    init_node.cost = cost + self.map_point[point_index_before].cost
-                    init_node.father_index = [current_x, current_y]
+                if self.border_point.count([target_x, target_y]) == 0:
                     point_index_current = self.CalculateIndex(target_x, target_y)
-                    if self.map_point[point_index_current].cost > init_node.cost:
-                        self.map_point[point_index_current] = copy.deepcopy(init_node)
-                    return
-
-                if self.Open.count([target_x, target_y]) == 0:
-                    if self.border_point.count([target_x, target_y]) == 0:
-                        if target_x != self.start[0] or target_y != self.start[1]:
-                            self.Open.append([target_x, target_y])
+                    if self.CloseList.get(point_index_current):
+                        continue
+                    else:
                         point_index_before = self.CalculateIndex(current_x, current_y)
-                        init_node.cost = cost + self.map_point[point_index_before].cost
+                        init_node.cost = cost + self.CloseList[point_index_before].cost
                         init_node.father_index = [current_x, current_y]
-                        point_index_current = self.CalculateIndex(target_x, target_y)
-                        if self.map_point[point_index_current].cost > init_node.cost:
+                        if self.map_point[point_index_current].cost >= init_node.cost:
                             self.map_point[point_index_current] = copy.deepcopy(init_node)
-        self.Dijkstra(self.Open)
 
     def GetPath(self):
+        iCount = 0
+        for ii in self.Open:
+            plt.plot(ii[0], ii[1], c='g', marker='o')
+            iCount = iCount + 1
+            if iCount % 30 == 0:
+                plt.pause(0.001)
+        xy = [endPoint]
         EndIndex = self.CalculateIndex(endPoint[0], endPoint[1])
-        self.CloseList.append([endPoint[0], endPoint[1]])
-        dd = self.map_point[EndIndex].father_index
-        self.CloseList.insert(0, dd)
-        index = self.CalculateIndex(dd[0], dd[1])
+        xy.append(self.CloseList[EndIndex].father_index)
+        cc = self.CloseList[EndIndex].father_index
+        xy.append(cc)
         while 1:
-            cc = self.map_point[index].father_index
-            self.CloseList.insert(0, cc)
-            if cc[0] == self.start[0] and cc[1] == self.start[1]:
-                return
-            index = self.CalculateIndex(cc[0], cc[1])
+            EndIndex = self.CalculateIndex(cc[0], cc[1])
+            cc = self.CloseList[EndIndex].father_index
+            xy.append(cc)
+            if self.start == cc:
+                return xy
 
     def BuildingBoundaryMap(self):
         for ij in self.border_point:
@@ -133,19 +150,10 @@ class PlotMap:
         plt.scatter(self.end[0], self.end[1], c='b', marker="o")
 
     def PlotCalculationProcess(self):
-        plt.figure(figsize=(8, 8))
-        self.BuildingBoundaryMap()
-        iCount = 0
-        for Position in self.Open:
-            iCount = iCount + 1
-            if iCount % 30 == 0:
-                plt.pause(0.01)
-            plt.plot(Position[0], Position[1], c='g', marker='o')
-
-        self.GetPath()
+        ll = self.GetPath()
         rx = []
         ry = []
-        for ResolutionWay in self.CloseList:
+        for ResolutionWay in ll:
             rx.append(ResolutionWay[0])
             ry.append(ResolutionWay[1])
         plt.plot(rx, ry, c='r', marker='*')
@@ -158,7 +166,6 @@ if __name__ == '__main__':
     startPoint = [-15, -15]
     endPoint = [15, 15]
     oPlotMap = PlotMap(-20, -20, 20, 20, startPoint, endPoint)
-    oPlotMap.Init()
     Start = [startPoint]
-    oPlotMap.Dijkstra(Start)
+    oPlotMap.Dijkstra()
     oPlotMap.PlotCalculationProcess()
