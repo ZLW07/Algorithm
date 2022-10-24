@@ -174,6 +174,12 @@ class RRTGridMap:
                 yy.append(value.father_index[1])
 
     def PlotMap(self):
+        plt.figure(figsize=(18, 10))
+        plt.xlim(self.minX - 1, self.maxX + 1)
+        plt.ylim(self.minY - 1, self.maxY + 1)
+        plt.grid()
+        plt.xticks(np.arange(self.minX - 1, self.maxX + 1,1))
+        plt.yticks(np.arange(self.minY - 1, self.maxY + 1,1))
         self.BuildingBoundaryMap()
         for ii in self.Open.values():
             xx = [ii.father_index[0], ii.currrent_index[0]]
@@ -193,5 +199,5 @@ if __name__ == '__main__':
     Test = RRTGridMap(-20, -20, 20, 20, startPoint, endPoint, step, tolerance)
     Test.RRTPlanning()
     plt.pause(0.001)
-    plt.grid()
+
     plt.show()
