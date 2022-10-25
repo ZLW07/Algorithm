@@ -220,6 +220,11 @@ class RRTGridMap:
         x1, y1 = self.FindPath()
         plt.plot(x1, y1, c='r', marker="*")
         plt.pause(0.001)
+        x = []
+        y = []
+        self.ClipPath(x, y, endPoint)
+        plt.plot(x1, y1, c='b', marker='^')
+        plt.pause(0.001)
 
 
 if __name__ == '__main__':
@@ -229,10 +234,4 @@ if __name__ == '__main__':
     tolerance = 2
     Test = RRTGridMap(-20, -20, 20, 20, startPoint, endPoint, step, tolerance)
     Test.RRTPlanning()
-    plt.pause(0.001)
-    x1 = []
-    y1 = []
-    Test.ClipPath(x1, y1, endPoint)
-    plt.plot(x1, y1, c='b', marker='^')
-    plt.pause(0.001)
     plt.show()
