@@ -206,12 +206,11 @@ class RRTGridMap:
 
     def PlotMap(self):
         plt.figure(figsize=(10, 8))
-
         plt.xlim(self.minX - 1, self.maxX + 1)
         plt.ylim(self.minY - 1, self.maxY + 1)
         plt.grid()
-        plt.xticks(np.arange(self.minX - 1, self.maxX + 1, 1), fontsize=5)
-        plt.yticks(np.arange(self.minY - 1, self.maxY + 1, 1), fontsize=5)
+        plt.xticks(np.arange(self.minX - 1, self.maxX + 1, 1), fontsize=6)
+        plt.yticks(np.arange(self.minY - 1, self.maxY + 1, 1), fontsize=6)
         self.BuildingBoundaryMap()
         for ii in self.Open.values():
             xx = [ii.father_index[0], ii.currrent_index[0]]
