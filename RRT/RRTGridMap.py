@@ -156,7 +156,6 @@ class RRTGridMap:
         yy.append(self.end[1])
         index = self.CalculateIndex(self.end[0], self.end[1])
         value = self.Open[index]
-        print("value:  ", value.father_index)
         xx.append(value.father_index[0])
         yy.append(value.father_index[1])
         while True:
@@ -169,17 +168,50 @@ class RRTGridMap:
             else:
                 index = self.CalculateIndex(value.father_index[0], value.father_index[1])
                 value = self.Open[index]
-                print("value:  ", value.father_index)
                 xx.append(value.father_index[0])
                 yy.append(value.father_index[1])
 
+    def ClipPath(self, xx, yy, point):
+        xx.append(point[0])
+        yy.append(point[1])
+        print("The clip node is: ", point)
+        if point == [self.start[0], self.start[1]]:
+            xx.append(self.start[0])
+            yy.append(self.start[1])
+            xx.reverse()
+            yy.reverse()
+            return
+        else:
+            index = self.CalculateIndex(point[0], point[1])
+            value = self.Open[index]
+            index = self.CalculateIndex(value.father_index[0], value.father_index[1])
+            value1 = self.Open[index]
+            Flag = True
+            while True:
+                if [value1.father_index[0], value1.father_index[1]] == [self.start[0], self.start[1]]:
+                    xx.append(self.start[0])
+                    yy.append(self.start[1])
+                    xx.reverse()
+                    yy.reverse()
+                    return
+                A, B, C = self.GeneralEquation(point[0], point[1], value1.father_index[0], value1.father_index[1])
+                Flag = self.IsOkPoint(A, B, C, point, value1.father_index[0], value1.father_index[1])
+                if Flag:
+                    index = self.CalculateIndex(value1.father_index[0], value1.father_index[1])
+                    value1 = self.Open[index]
+                else:
+                    break
+            self.ClipPath(xx, yy, value1.currrent_index)
+        return
+
     def PlotMap(self):
-        plt.figure(figsize=(18, 10))
+        plt.figure(figsize=(10, 8))
+
         plt.xlim(self.minX - 1, self.maxX + 1)
         plt.ylim(self.minY - 1, self.maxY + 1)
         plt.grid()
-        plt.xticks(np.arange(self.minX - 1, self.maxX + 1,1))
-        plt.yticks(np.arange(self.minY - 1, self.maxY + 1,1))
+        plt.xticks(np.arange(self.minX - 1, self.maxX + 1, 1), fontsize=5)
+        plt.yticks(np.arange(self.minY - 1, self.maxY + 1, 1), fontsize=5)
         self.BuildingBoundaryMap()
         for ii in self.Open.values():
             xx = [ii.father_index[0], ii.currrent_index[0]]
@@ -199,5 +231,9 @@ if __name__ == '__main__':
     Test = RRTGridMap(-20, -20, 20, 20, startPoint, endPoint, step, tolerance)
     Test.RRTPlanning()
     plt.pause(0.001)
-
+    x1 = []
+    y1 = []
+    Test.ClipPath(x1, y1, endPoint)
+    plt.plot(x1, y1, c='b', marker='^')
+    plt.pause(0.001)
     plt.show()
