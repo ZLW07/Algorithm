@@ -3,38 +3,27 @@ import math
 import copy
 import numpy as np
 import sys
+from pathlib import Path
+
+from environment import Environment
+from node import Node
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 
 sys.setrecursionlimit(1500)
 
 
-class Node:
-    def __init__(self):
-        self.father_index = [math.inf, math.inf]
-        self.cost = math.inf
-
-    def gatherAttrs(self):
-        return ", ".join("{} = {}"
-                         .format(k, getattr(self, k))
-                         for k in self.__dict__.keys())
-
-    def __str__(self):
-        return "[{}]".format(self.gatherAttrs())
-
-
-class PlotMap:
+class Dijkstra:
     def __init__(self, min_x, min_y, max_x, max_y, start_point, end_point):
-
-        self.minX = min_x
-        self.maxX = max_x
-        self.minY = min_y
-        self.maxY = max_y
-
+        self.env = Environment(min_x, min_y, max_x, max_y)
+        self.border_point = self.env.get_border()
+        self.work_space = self.env.get_workspace()
+        self.move_cost = self.env.get_init_motion_cost()
         self.start = start_point
         self.end = end_point
-        self.Index = dict()
         self.CloseList = dict()
-        self.Open = []
-
+        self.searched_space = []
         self.motion = [[1, 0, 1],
                        [0, 1, 1],
                        [-1, 0, 1],
@@ -44,38 +33,8 @@ class PlotMap:
                        [1, -1, math.sqrt(2)],
                        [1, 1, math.sqrt(2)]]
 
-        self.border_point = []
-        for ii in np.arange(min_x, max_x, 1):
-            self.border_point.append([ii, min_y])
-
-        for jj in np.arange(min_y, max_y, 1):
-            self.border_point.append([min_x, jj])
-
-        for ii in np.arange(min_x, max_x, 1):
-            self.border_point.append([ii, max_y])
-        #
-        for jj in np.arange(min_y, max_y, 1):
-            self.border_point.append([max_x, jj])
-
-        self.border_point.append([max_x, max_y])
-
-        for ij in np.arange(min_y, max_y - 10):
-            self.border_point.append([-5, ij])
-
-        for ij in np.arange(max_y - 15, max_y):
-            self.border_point.append([5, ij])
-
-        self.map_point = dict()
-        index = 0
-        init_node = Node()
-        for ii in np.arange(min_x, max_x + 1, 1):
-            for jj in np.arange(min_y, max_y + 1, 1):
-                self.map_point[index] = copy.deepcopy(init_node)
-                self.Index[index] = [ii, jj]
-                index = index + 1
-
     def CalculateIndex(self, x, y):
-        return (self.maxX - self.minX + 1) * (x - self.minX) + (y - self.minY)
+        return self.env.calculate_index(x, y)
 
     def Dijkstra(self):
         plt.figure(figsize=(8, 8))
@@ -84,11 +43,11 @@ class PlotMap:
         init_node = Node()
         init_node.father_index = [-1, -1]
         init_node.cost = 0
-        self.map_point[index] = copy.deepcopy(init_node)
+        self.move_cost[index] = copy.deepcopy(init_node)
         self.CloseList[index] = copy.deepcopy(init_node)
         current_x = self.start[0]
         current_y = self.start[1]
-        self.map_point.pop(index)
+        self.move_cost.pop(index)
         for motion_x, motion_y, cost in self.motion:
             target_x = current_x + motion_x
             target_y = current_y + motion_y
@@ -99,15 +58,15 @@ class PlotMap:
             init_node.cost = cost + self.CloseList[point_index_before].cost
             init_node.father_index = [current_x, current_y]
             point_index_current = self.CalculateIndex(target_x, target_y)
-            if self.map_point[point_index_current].cost > init_node.cost:
-                self.map_point[point_index_current] = copy.deepcopy(init_node)
+            if self.move_cost[point_index_current].cost > init_node.cost:
+                self.move_cost[point_index_current] = copy.deepcopy(init_node)
         while 1:
-            min_key = min(self.map_point, key=lambda k: self.map_point[k].cost)
-            current_x = self.Index[min_key][0]
-            current_y = self.Index[min_key][1]
-            self.Open.append([current_x, current_y])
-            self.CloseList[min_key] = self.map_point[min_key]
-            self.map_point.pop(min_key)
+            min_key = min(self.move_cost, key=lambda k: self.move_cost[k].cost)
+            current_x = self.work_space[min_key][0]
+            current_y = self.work_space[min_key][1]
+            self.searched_space.append([current_x, current_y])
+            self.CloseList[min_key] = self.move_cost[min_key]
+            self.move_cost.pop(min_key)
             if current_x == self.end[0] and current_y == self.end[1]:
                 break
             for motion_x, motion_y, cost in self.motion:
@@ -121,12 +80,12 @@ class PlotMap:
                         point_index_before = self.CalculateIndex(current_x, current_y)
                         init_node.cost = cost + self.CloseList[point_index_before].cost
                         init_node.father_index = [current_x, current_y]
-                        if self.map_point[point_index_current].cost >= init_node.cost:
-                            self.map_point[point_index_current] = copy.deepcopy(init_node)
+                        if self.move_cost[point_index_current].cost >= init_node.cost:
+                            self.move_cost[point_index_current] = copy.deepcopy(init_node)
 
     def GetPath(self):
         iCount = 0
-        for ii in self.Open:
+        for ii in self.searched_space:
             plt.plot(ii[0], ii[1], c='g', marker='o')
             iCount = iCount + 1
             if iCount % 30 == 0:
@@ -165,7 +124,7 @@ class PlotMap:
 if __name__ == '__main__':
     startPoint = [-15, -15]
     endPoint = [15, 15]
-    oPlotMap = PlotMap(-20, -20, 20, 20, startPoint, endPoint)
+    oPlotMap = Dijkstra(-20, -20, 20, 20, startPoint, endPoint)
     Start = [startPoint]
     oPlotMap.Dijkstra()
     oPlotMap.PlotCalculationProcess()
